@@ -7,7 +7,7 @@ import time
 # CẤU HÌNH TẠI ĐÂY: Bạn có thể điền 1, 2 hoặc cả 3 trình duyệt (phân cách bằng dấu phẩy)
 # Ví dụ: "chrome" hoặc "chrome, edge" hoặc "chrome, opera, edge"
 # =========================================================================
-BROWSER_TYPE = "chrome, opera, edge" 
+BROWSER_TYPE = "chrome" 
 
 # Nhập đường dẫn Opera trên máy bạn (chỉ dùng nếu có chạy "opera")
 OPERA_PATH = r"C:\Users\Admin\AppData\Local\Programs\Opera\opera.exe"
