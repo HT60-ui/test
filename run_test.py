@@ -1,93 +1,85 @@
+import time
+import os
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.edge.options import Options as EdgeOptions
-import time
+# Sử dụng webdriver-manager để tự động tải driver tương thích với từng máy
+from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.microsoft import EdgeChromiumDriverManager
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.edge.service import Service as EdgeService
 
 # =========================================================================
-# CẤU HÌNH TẠI ĐÂY: Bạn có thể điền 1, 2 hoặc cả 3 trình duyệt (phân cách bằng dấu phẩy)
+# CẤU HÌNH
 # =========================================================================
 BROWSER_TYPE = "chrome" 
-
-# Nhập đường dẫn Opera trên máy bạn (chỉ dùng nếu có chạy "opera")
-OPERA_PATH = r"C:\Users\Admin\AppData\Local\Programs\Opera\opera.exe"
-
-# Đường dẫn URL mục tiêu cần kiểm thử cấp quyền tự động
 TARGET_URL = "https://ht60-ui.github.io/test/"
-# =========================================================================
 
 def setup_options(options_obj):
-    # Loại bỏ cờ báo hiệu trình duyệt đang bị điều khiển tự động (Automation)
-    # Điều này giúp trình duyệt hoạt động ổn định và tự nhiên hơn
     options_obj.add_experimental_option("excludeSwitches", ["enable-automation"])
     options_obj.add_experimental_option('useAutomationExtension', False)
+    # Tắt bảng hỏi quyền tự động ở mức trình duyệt
+    prefs = {
+        "profile.default_content_setting_values.geolocation": 1,
+        "profile.managed_default_content_settings.geolocation": 1
+    }
+    options_obj.add_experimental_option("prefs", prefs)
+    options_obj.add_argument("--start-maximized")
+    options_obj.add_argument("--no-sandbox")
+    options_obj.add_argument("--disable-dev-shm-usage")
     return options_obj
 
-# Danh sách chứa các driver đang chạy để quản lý ở cuối script
 drivers = []
-
-# Tách chuỗi BROWSER_TYPE thành danh sách các trình duyệt cần bật
 selected_browsers = [b.strip().lower() for b in BROWSER_TYPE.split(",")]
 
-# Khởi chạy song song các trình duyệt được chọn
 for browser in selected_browsers:
     try:
         print(f"Đang khởi tạo trình duyệt: {browser.upper()}...")
         
         if browser == "chrome":
             options = setup_options(ChromeOptions())
-            driver = webdriver.Chrome(options=options)
+            # Tự động tải driver phù hợp với máy hiện tại
+            service = ChromeService(ChromeDriverManager().install())
+            driver = webdriver.Chrome(service=service, options=options)
             
         elif browser == "edge":
             options = setup_options(EdgeOptions())
-            driver = webdriver.Edge(options=options)
-            
-        elif browser == "opera":
-            options = setup_options(ChromeOptions())
-            options.binary_location = OPERA_PATH
-            driver = webdriver.Chrome(options=options)
-            
-        else:
-            print(f"⚠️ Trình duyệt '{browser}' không hợp lệ, bỏ qua.")
-            continue
-            
-        driver.maximize_window()
+            # Tự động tải driver phù hợp với máy hiện tại
+            service = EdgeService(EdgeChromiumDriverManager().install())
+            driver = webdriver.Edge(service=service, options=options)
         
-        # 🌟 ĐÂY LÀ PHẦN SỬA ĐỔI CHÍNH ĐỂ TỰ ĐỘNG "ALLOW":
-        # Sử dụng lệnh Browser.grantPermissions của CDP để cấp trực tiếp quyền vị trí (geolocation)
-        # cho chính xác tên miền (Origin) của trang web trước khi trang được tải.
+        else:
+            print(f"⚠️ Trình duyệt '{browser}' không hỗ trợ tự động driver, bỏ qua.")
+            continue
+        
+        # Cấp quyền Geolocation ngầm bằng CDP
         driver.execute_cdp_cmd("Browser.grantPermissions", {
             "origin": "https://ht60-ui.github.io",
             "permissions": ["geolocation"]
         })
         
-        # Ép trình duyệt nhận tọa độ giả lập để kiểm tra luồng dữ liệu (Bypass GPS thực tế)
+        # Giả lập tọa độ
         driver.execute_cdp_cmd("Emulation.setGeolocationOverride", {
             "latitude": 21.028511,
             "longitude": 105.804817,
             "accuracy": 100
         })
         
-        # Sau khi quyền đã được cấp ngầm thành công, tiến hành điều hướng tới trang web
+        time.sleep(0.5) # Chờ một chút để trình duyệt áp dụng quyền
         driver.get(TARGET_URL)
         
-        # Lưu driver vào danh sách để giữ cửa sổ không bị tắt
         drivers.append(driver)
-        print(f"✅ Đã kích hoạt và TỰ ĐỘNG CẤP QUYỀN cho {browser.upper()} thành công!")
+        print(f"✅ Đã khởi chạy {browser.upper()} thành công!")
         
     except Exception as e:
-        print(f"❌ Lỗi khi khởi chạy {browser.upper()}: {e}")
+        print(f"❌ Lỗi tại máy này (Kiểm tra kết nối hoặc phiên bản trình duyệt): {e}")
 
-print(f"\n🚀 Đã kích hoạt xong tất cả trình duyệt yêu cầu!")
+print(f"\n🚀 Đã kích hoạt xong! Nhấn Ctrl+C tại cửa sổ này để đóng trình duyệt.")
 
-# Vòng lặp giữ cho TẤT CẢ các trình duyệt không bị đóng tự động
 while True:
     try:
         time.sleep(1)
     except KeyboardInterrupt:
-        print("\nĐang đóng toàn bộ trình duyệt...")
         for driver in drivers:
-            try:
-                driver.quit()
-            except:
-                pass
+            driver.quit()
         break
