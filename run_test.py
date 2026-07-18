@@ -1,48 +1,67 @@
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.options import Options as ChromeOptions
+from selenium.webdriver.edge.options import Options as EdgeOptions
+import os
 import time
 
-# 1. Cấu hình Chrome chuyên sâu để ép cấp quyền vị trí
-options = Options()
+# =========================================================================
+# CẤU HÌNH TẠI ĐÂY: Bạn muốn chạy trình duyệt nào?
+# Điền một trong ba chữ: "chrome" hoặc "edge" hoặc "opera"
+# =========================================================================
+BROWSER_TYPE = "chrome, opera, edge" 
 
-# Tham số ép Chrome tự động ALLOW vị trí cho TẤT CẢ các trang (kể cả các thành phần nhúng)
-options.add_argument("--always-authorize-plugins")
-options.add_argument("--grant-high-content-permissions")
+# Nhập đường dẫn Opera trên máy bạn (chỉ dùng nếu CHỌN BROWSER_TYPE = "opera")
+OPERA_PATH = r"C:\Users\Admin\AppData\Local\Programs\Opera\opera.exe"
+# =========================================================================
 
-# Tự động cho phép Geolocation ở cấp độ Profile hệ thống
+# 1. Cấu hình ép tự động ALLOW vị trí chung cho nhân Chromium
 prefs = {
     "profile.default_content_setting_values.geolocation": 1,
     "profile.managed_default_content_settings.geolocation": 1
 }
-options.add_experimental_option("prefs", prefs)
 
-# Tắt thanh thông báo "Chrome đang bị điều khiển bởi phần mềm tự động"
-options.add_experimental_option("excludeSwitches", ["enable-automation"])
-options.add_experimental_option('useAutomationExtension', False)
+def setup_options(options_obj):
+    options_obj.add_argument("--always-authorize-plugins")
+    options_obj.add_argument("--grant-high-content-permissions")
+    options_obj.add_experimental_option("prefs", prefs)
+    options_obj.add_experimental_option("excludeSwitches", ["enable-automation"])
+    options_obj.add_experimental_option('useAutomationExtension', False)
+    return options_obj
 
-# 2. Khởi chạy trình duyệt Chrome thông qua Selenium
-driver = webdriver.Chrome(options=options)
+# 2. Khởi chạy trình duyệt dựa theo lựa chọn của bạn
+print(f"Đang khởi tạo trình duyệt: {BROWSER_TYPE.upper()}...")
+
+if BROWSER_TYPE.lower() == "chrome":
+    options = setup_options(ChromeOptions())
+    driver = webdriver.Chrome(options=options)
+
+elif BROWSER_TYPE.lower() == "edge":
+    options = setup_options(EdgeOptions())
+    driver = webdriver.Edge(options=options)
+
+elif BROWSER_TYPE.lower() == "opera":
+    options = setup_options(ChromeOptions())
+    options.binary_location = OPERA_PATH
+    driver = webdriver.Chrome(options=options)
+else:
+    raise ValueError("Trình duyệt không hợp lệ! Vui lòng chọn 'chrome', 'edge' hoặc 'opera'.")
+
 driver.maximize_window()
 
-# Ép trình duyệt nhận tọa độ giả lập (Ví dụ dưới đây là tọa độ Hà Nội)
+# 3. Ép trình duyệt nhận tọa độ giả lập (Bypass GPS thực tế)
 driver.execute_cdp_cmd("Emulation.setGeolocationOverride", {
     "latitude": 21.028511,
     "longitude": 105.804817,
     "accuracy": 100
 })
 
-# =========================================================================
-# 3. ĐƯỜNG DẪN TRANG WEB ONLINE (GITHUB PAGES)
-# =========================================================================
-# Khai báo chính xác link GitHub Pages của bạn để bot truy cập trực tiếp
+# 4. Đường dẫn trang web online GitHub Pages của bạn
 target_url = "https://ht60-ui.github.io/test/"
-
-# Ép cửa sổ Chrome của Selenium tự động mở link này lên
 driver.get(target_url)
 
-print("Đã kích hoạt tự động mở trang web GitHub và bypass vị trí thành công!")
+print(f"Đã kích hoạt tự động mở {BROWSER_TYPE.upper()} và bypass vị trí thành công!")
 
-# Vòng lặp giữ cho script Python chạy ngầm để cửa sổ trình duyệt không bị đóng
+# Vòng lặp giữ cho trình duyệt không bị đóng tự động
 while True:
     try:
         time.sleep(1)
